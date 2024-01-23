@@ -1,16 +1,30 @@
 # imegeri
 
-A new Flutter project.
+Imageri lets you browse and manage your photos easily
 
-## Getting Started
+## Platform
 
-This project is a starting point for a Flutter application.
+Android only
 
-A few resources to get you started if this is your first Flutter project:
+## Build
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+* Clone the project
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+    ```bash
+    git clone https://github.com/ksb2311/imageri.git
+    ```
+
+* Go to folder
+  
+    ```bash
+    cd imageri
+    ```
+
+* Run the project
+
+  ```bash
+  flutter run
+  ```
+
+Check my profile for more
+<https://github.com/ksb2311/>
