@@ -4,7 +4,9 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_wallpaper_manager/flutter_wallpaper_manager.dart';
 import 'package:imegeri/widgets/glassmorphism.dart';
+import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
 import 'package:open_file/open_file.dart';
 import 'package:path/path.dart';
@@ -34,8 +36,10 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
   late List<AssetEntity> pathListLocal;
 
   bool isBlur = false;
-
   Color toolBarIconColor = Colors.white;
+  bool expandToolBar = false;
+
+  bool swipeLock = false;
 
   // controllers
   TransformationController controllerT = TransformationController();
@@ -45,6 +49,8 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
   late PageController controllerPage;
 
   late List<String> preloadedImgFilePaths = [];
+  // final platform = const MethodChannel('com.example.wallpaper');
+  int location = WallpaperManager.BOTH_SCREEN; //can be Home/Lock Screen
 
   @override
   void initState() {
@@ -91,7 +97,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
     List<String> sizeName = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"];
     int i = (log(sizeBytes) / log(1024)).floor();
     num p = pow(1024, i);
-    double s = (sizeBytes / p).roundToDouble();
+    double s = (sizeBytes / p);
     return "${s.toStringAsFixed(2)} ${sizeName[i]}";
   }
 
@@ -132,8 +138,16 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
       preloadedImgFilePaths = paths;
       imgFilePath = preloadedImgFilePaths[widget._assetIndex];
     });
-    print(preloadedImgFilePaths);
   }
+
+  // Future<void> setWallpaper(String imagePath) async {
+  //   try {
+  //     await platform.invokeMethod('setWallpaper', {'imagePath': imagePath});
+  //   } on PlatformException catch (e) {
+  //     debugPrint('$e');
+  //     // Handle error
+  //   }
+  // }
 
   // void getPathList() async {
   // List<AssetEntity> alist = widget._pathsList;
@@ -163,7 +177,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
     // PhotoProvider imgprovider = PhotoProvider(mediumId: widget.medium.id);
 
     controllerT.addListener(() {
-      if (controllerT.value.getMaxScaleOnAxis() != 1.0) {
+      if (controllerT.value.getMaxScaleOnAxis() != 1.0 || swipeLock) {
         setState(() {
           pageScrollToggleState = const NeverScrollableScrollPhysics();
         });
@@ -224,6 +238,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                       } else {
                         SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
                       }
+                      expandToolBar = false;
                     },
                     child: InteractiveViewer(
                         // boundaryMargin: const EdgeInsets.all(1.0),
@@ -241,128 +256,175 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                   bottom: MediaQuery.of(context).viewPadding.bottom,
                   left: 0,
                   right: 0,
-                  child: SizedBox(
-                    // margin: const EdgeInsets.all(20),
-                    height: 70,
-                    width: double.infinity,
-                    child: GlassMorphism(
-                      blur: 20,
-                      opacity: 0.2,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          IconButton(
-                            onPressed: () {
-                              imgFilePath = preloadedImgFilePaths[imgFilePathIndex];
-                              try {
-                                Share.shareXFiles([XFile(imgFilePath)], text: basename(aFile.path));
-                              } catch (e) {
-                                debugPrint('Error sharing file: $e');
-                                // Handle the error or show a message to the user
-                              }
-                            },
-                            icon: const Icon(Icons.share),
-                            color: toolBarIconColor,
-                          ),
-                          IconButton(
-                            onPressed: () async {
-                              String creDateStr =
-                                  '${dateMod!.day.toString()}-${dateMod!.month.toString()}-${dateMod!.year.toString()} ${dateMod!.hour.toString()}:${dateMod!.minute.toString()}';
-                              assetPath = preloadedImgFilePaths[imgFilePathIndex];
-                              statOfFile = FileStat.statSync(assetPath);
-                              if (!mounted) return;
+                  child: GlassMorphism(
+                    blur: 20,
+                    opacity: 0.2,
+                    child: Column(
+                      children: [
+                        expandToolBar
+                            ? ListView(
+                                shrinkWrap: true,
+                                physics: const ClampingScrollPhysics(),
+                                padding: const EdgeInsets.all(5),
+                                children: [
+                                  const ListTile(
+                                    textColor: Colors.white,
+                                    title: Text('Add to album'),
+                                  ),
+                                  ListTile(
+                                    textColor: Colors.white,
+                                    title: const Text('Set As'),
+                                    onTap: () async {
+                                      bool result = await WallpaperManager.setWallpaperFromFile(imgFilePath, location);
+                                      debugPrint('set as wallpaper success $result');
+                                    },
+                                  ),
+                                  ListTile(
+                                    textColor: Colors.white,
+                                    iconColor: swipeLock ? Colors.redAccent : Colors.greenAccent,
+                                    title: const Text('Lock Swipe'),
+                                    trailing: const Icon(Icons.swipe),
+                                    onTap: () {
+                                      setState(() {
+                                        swipeLock = !swipeLock;
+                                      });
+                                      if (swipeLock) {
+                                        setState(() {
+                                          pageScrollToggleState = const NeverScrollableScrollPhysics();
+                                        });
+                                      } else {
+                                        setState(() {
+                                          pageScrollToggleState = const PageScrollPhysics();
+                                        });
+                                      }
+                                    },
+                                  ),
+                                ],
+                              )
+                            : const SizedBox(),
+                        SizedBox(
+                          height: 70,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  imgFilePath = preloadedImgFilePaths[imgFilePathIndex];
+                                  try {
+                                    Share.shareXFiles([XFile(imgFilePath)], text: basename(aFile.path));
+                                  } catch (e) {
+                                    debugPrint('Error sharing file: $e');
+                                    // Handle the error or show a message to the user
+                                  }
+                                },
+                                icon: const Icon(Icons.share),
+                                color: toolBarIconColor,
+                              ),
+                              IconButton(
+                                onPressed: () async {
+                                  String creDateStr =
+                                      '${dateMod!.day.toString()}-${dateMod!.month.toString()}-${dateMod!.year.toString()} ${dateMod!.hour.toString()}:${dateMod!.minute.toString()}';
+                                  assetPath = preloadedImgFilePaths[imgFilePathIndex];
+                                  statOfFile = FileStat.statSync(assetPath);
+                                  if (!mounted) return;
 
-                              showDialog<void>(
-                                  context: context,
-                                  barrierDismissible: false, // user must tap button!
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: Text(basename(aFile.path)),
-                                      content: Wrap(
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                  showDialog<void>(
+                                      context: context,
+                                      barrierDismissible: false, // user must tap button!
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: Text(basename(aFile.path)),
+                                          content: Wrap(
                                             children: [
-                                              Text('Width: ${assset.width}'),
-                                              Text('Height: ${assset.height}'),
-                                              Text('Created: $creDateStr'),
-                                              Text('Type: ${extension(assset.title!)}'),
-                                              Text('Size: ${convertSize(statOfFile.size)}'),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Width: ${assset.width}'),
+                                                  Text('Height: ${assset.height}'),
+                                                  Text('Created: $creDateStr'),
+                                                  Text('Type: ${extension(assset.title!)}'),
+                                                  Text('Size: ${convertSize(statOfFile.size)}'),
+                                                ],
+                                              )
                                             ],
-                                          )
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          child: const Text('Ok'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  });
-                            },
-                            icon: const Icon(Icons.info),
-                            color: toolBarIconColor,
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              // print(imgFilePath);
-                              OpenFile.open(imgFilePath);
-                            },
-                            icon: const Icon(Icons.edit),
-                            color: toolBarIconColor,
-                          ),
-                          IconButton(
-                            onPressed: () {
-                              showDialog<void>(
-                                  context: context,
-                                  barrierDismissible: false, // user must tap button!
-                                  builder: (BuildContext context) {
-                                    return AlertDialog(
-                                      title: const Text('Delete'),
-                                      content: const Wrap(
-                                        children: [
-                                          Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              child: const Text('Ok'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      });
+                                },
+                                icon: const Icon(Icons.info),
+                                color: toolBarIconColor,
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  // print(imgFilePath);
+                                  OpenFile.open(imgFilePath);
+                                },
+                                icon: const Icon(Icons.open_in_new),
+                                color: toolBarIconColor,
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  showDialog<void>(
+                                      context: context,
+                                      barrierDismissible: false, // user must tap button!
+                                      builder: (BuildContext context) {
+                                        return AlertDialog(
+                                          title: const Text('Delete'),
+                                          content: const Wrap(
                                             children: [
-                                              Text('Are you sure?'),
+                                              Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text('Are you sure?'),
+                                                ],
+                                              )
                                             ],
-                                          )
-                                        ],
-                                      ),
-                                      actions: [
-                                        TextButton(
-                                          style: const ButtonStyle(foregroundColor: MaterialStatePropertyAll(Colors.red)),
-                                          onPressed: () async {
-                                            // Navigator.of(context).pop();
-                                            deleteFile(aFile);
-                                            Navigator.of(context).pop();
-                                            Navigator.of(context).pop();
-                                          },
-                                          child: const Text('Ok'),
-                                        ),
-                                        TextButton(
-                                          child: const Text('Cancel'),
-                                          onPressed: () {
-                                            Navigator.of(context).pop();
-                                          },
-                                        ),
-                                      ],
-                                    );
+                                          ),
+                                          actions: [
+                                            TextButton(
+                                              style: const ButtonStyle(foregroundColor: MaterialStatePropertyAll(Colors.red)),
+                                              onPressed: () async {
+                                                // Navigator.of(context).pop();
+                                                deleteFile(aFile);
+                                                Navigator.of(context).pop();
+                                                Navigator.of(context).pop();
+                                              },
+                                              child: const Text('Ok'),
+                                            ),
+                                            TextButton(
+                                              child: const Text('Cancel'),
+                                              onPressed: () {
+                                                Navigator.of(context).pop();
+                                              },
+                                            ),
+                                          ],
+                                        );
+                                      });
+                                },
+                                icon: const Icon(Icons.delete),
+                                color: toolBarIconColor,
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    expandToolBar = !expandToolBar;
                                   });
-                            },
-                            icon: const Icon(Icons.delete),
-                            color: toolBarIconColor,
+                                },
+                                icon: const Icon(Icons.more_vert),
+                                color: toolBarIconColor,
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.more_vert),
-                            color: toolBarIconColor,
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
                 )
@@ -376,9 +438,17 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                       child: AppBar(
                         backgroundColor: Colors.transparent,
                         foregroundColor: toolBarIconColor,
-                        title: Text(
-                          assset.modifiedDateTime.toLocal().toString(),
-                          style: TextStyle(fontSize: 20, color: toolBarIconColor),
+                        title: Column(
+                          children: [
+                            Text(
+                              DateFormat('dd MMM yyyy').format(assset.modifiedDateTime),
+                              style: TextStyle(fontSize: 20, color: toolBarIconColor),
+                            ),
+                            Text(
+                              DateFormat('dd:mm a').format(assset.modifiedDateTime),
+                              style: TextStyle(fontSize: 15, color: toolBarIconColor),
+                            ),
+                          ],
                         ),
                       ),
                     )
