@@ -11,9 +11,8 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    String selectedTheme = 'System Default';
-    var brightness =
-        SchedulerBinding.instance.platformDispatcher.platformBrightness;
+    String selectedTheme = 'Dark';
+    var brightness = SchedulerBinding.instance.platformDispatcher.platformBrightness;
     ThemeData getThemeData(String theme) {
       switch (theme) {
         case 'Light':

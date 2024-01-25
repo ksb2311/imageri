@@ -4,7 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_wallpaper_manager/flutter_wallpaper_manager.dart';
+import 'package:imegeri/screens/wallpaper_screen.dart';
 import 'package:imegeri/widgets/glassmorphism.dart';
 import 'package:intl/intl.dart';
 import 'package:mime/mime.dart';
@@ -50,7 +50,6 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
 
   late List<String> preloadedImgFilePaths = [];
   // final platform = const MethodChannel('com.example.wallpaper');
-  int location = WallpaperManager.BOTH_SCREEN; //can be Home/Lock Screen
 
   @override
   void initState() {
@@ -258,7 +257,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                   right: 0,
                   child: GlassMorphism(
                     blur: 20,
-                    opacity: 0.2,
+                    opacity: 50,
                     child: Column(
                       children: [
                         expandToolBar
@@ -267,16 +266,40 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                 physics: const ClampingScrollPhysics(),
                                 padding: const EdgeInsets.all(5),
                                 children: [
-                                  const ListTile(
-                                    textColor: Colors.white,
-                                    title: Text('Add to album'),
-                                  ),
+                                  // const ListTile(
+                                  //   textColor: Colors.white,
+                                  //   title: Text('Add to album'),
+                                  //   trailing: Icon(Icons.photo_album),
+                                  //   iconColor: Colors.white,
+                                  // ),
                                   ListTile(
                                     textColor: Colors.white,
-                                    title: const Text('Set As'),
+                                    title: const Text('Set As Wallpaper'),
+                                    trailing: const Icon(Icons.wallpaper),
+                                    iconColor: Colors.white,
                                     onTap: () async {
-                                      bool result = await WallpaperManager.setWallpaperFromFile(imgFilePath, location);
-                                      debugPrint('set as wallpaper success $result');
+                                      Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => WallpaperView(asset: assset, fullpath: imgFilePath),
+                                          ));
+
+//                                       String result;
+// // Platform messages may fail, so we use a try/catch PlatformException.
+//                                       try {
+//                                         result = await AsyncWallpaper.setWallpaperFromFile(
+//                                           filePath: imgFilePath,
+//                                           wallpaperLocation: AsyncWallpaper.BOTH_SCREENS,
+//                                           // goToHome: goToHome,
+//                                           toastDetails: ToastDetails.success(),
+//                                           errorToastDetails: ToastDetails.error(),
+//                                         )
+//                                             ? 'Wallpaper set'
+//                                             : 'Failed to get wallpaper.';
+//                                       } on PlatformException {
+//                                         result = 'Failed to get wallpaper.';
+//                                         debugPrint(result);
+//                                       }
                                     },
                                   ),
                                   ListTile(
@@ -312,6 +335,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                   imgFilePath = preloadedImgFilePaths[imgFilePathIndex];
                                   try {
                                     Share.shareXFiles([XFile(imgFilePath)], text: basename(aFile.path));
+                                    print(imgFilePath);
                                   } catch (e) {
                                     debugPrint('Error sharing file: $e');
                                     // Handle the error or show a message to the user
@@ -322,8 +346,6 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                               ),
                               IconButton(
                                 onPressed: () async {
-                                  String creDateStr =
-                                      '${dateMod!.day.toString()}-${dateMod!.month.toString()}-${dateMod!.year.toString()} ${dateMod!.hour.toString()}:${dateMod!.minute.toString()}';
                                   assetPath = preloadedImgFilePaths[imgFilePathIndex];
                                   statOfFile = FileStat.statSync(assetPath);
                                   if (!mounted) return;
@@ -339,11 +361,20 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                               Column(
                                                 crossAxisAlignment: CrossAxisAlignment.start,
                                                 children: [
-                                                  Text('Width: ${assset.width}'),
-                                                  Text('Height: ${assset.height}'),
-                                                  Text('Created: $creDateStr'),
-                                                  Text('Type: ${extension(assset.title!)}'),
-                                                  Text('Size: ${convertSize(statOfFile.size)}'),
+                                                  ListTile(
+                                                    dense: true,
+                                                    leading: const Icon(Icons.access_time),
+                                                    title: Text('Created: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assset.createDateTime)}'),
+                                                    subtitle: Text('Modified: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assset.modifiedDateTime)}'),
+                                                  ),
+                                                  ListTile(
+                                                    dense: true,
+                                                    leading: const Icon(Icons.image),
+                                                    title: Text(
+                                                        '${convertSize(statOfFile.size)} ${extension(assset.title!).replaceFirst(RegExp(r'.'), '')}'),
+                                                    subtitle: Text(
+                                                        '${((assset.width * assset.width) / 1000000).toStringAsFixed(1)}MP (${assset.width} x ${assset.height})'),
+                                                  ),
                                                 ],
                                               )
                                             ],
@@ -434,7 +465,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                   children: [
                     GlassMorphism(
                       blur: 20,
-                      opacity: 0.2,
+                      opacity: 50,
                       child: AppBar(
                         backgroundColor: Colors.transparent,
                         foregroundColor: toolBarIconColor,
@@ -445,7 +476,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                               style: TextStyle(fontSize: 20, color: toolBarIconColor),
                             ),
                             Text(
-                              DateFormat('dd:mm a').format(assset.modifiedDateTime),
+                              DateFormat('hh:mm a').format(assset.modifiedDateTime),
                               style: TextStyle(fontSize: 15, color: toolBarIconColor),
                             ),
                           ],

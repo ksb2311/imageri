@@ -14,7 +14,6 @@ const Color drawerBackgroundDark = Colors.grey;
 ThemeData _buildDefaultTheme() {
   final ThemeData base = ThemeData.light();
   return base.copyWith(
-    useMaterial3: true,
     colorScheme: base.colorScheme.copyWith(
       primary: SystemTheme.accentColor.accent,
       // secondary: Colors.grey,
@@ -41,7 +40,6 @@ ThemeData _buildDefaultTheme() {
 ThemeData _buildDarkTheme() {
   final ThemeData base = ThemeData.dark();
   return base.copyWith(
-    useMaterial3: true,
     colorScheme: base.colorScheme.copyWith(
       primary: SystemTheme.accentColor.accent,
       secondary: themeTextColor,
