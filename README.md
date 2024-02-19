@@ -4,11 +4,22 @@ Imageri lets you browse and manage your photos easily
 
 ## Platform
 
-Android only
+Android
+
+## Features
+
+* No Swipe Mode - Prevent switching images to keep privacy
+* Dark Glass UI
+
+## Screenshots
+
+<img src="Screenshots/Screenshot_1.png" width="200">
+<img src="Screenshots/Screenshot_2.png" width="200">
+<img src="Screenshots/Screenshot_3.png" width="200">
 
 ## Build
 
-* Clone the project
+* Download source from [here](https://github.com/ksb2311/imageri/archive/refs/heads/main.zip) or Clone the project
 
     ```bash
     git clone https://github.com/ksb2311/imageri.git
