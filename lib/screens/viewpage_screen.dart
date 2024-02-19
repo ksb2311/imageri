@@ -4,6 +4,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:imegeri/screens/videoprovider_screen.dart';
 import 'package:imegeri/screens/wallpaper_screen.dart';
 import 'package:imegeri/widgets/glassmorphism.dart';
 import 'package:intl/intl.dart';
@@ -31,7 +32,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
   Completer<ImageInfo> completer = Completer<ImageInfo>();
   String imgFilePath = '';
   int imgFilePathIndex = 0;
-  late AssetEntity assset;
+  late AssetEntity assetEntity;
   late String assetPath;
   late List<AssetEntity> pathListLocal;
 
@@ -64,7 +65,7 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
       controllerT.value = _animation.value;
     });
     controllerPage = PageController(initialPage: widget._assetIndex);
-    assset = widget._pathsList[imgFilePathIndex];
+    assetEntity = widget._pathsList[widget._assetIndex];
     assetPath = '';
     preloadFilePaths();
     // getFilePath();
@@ -118,12 +119,12 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
     return mimeType != null && mimeType.startsWith('image/');
   }
 
-  void getPathFromFile(index) async {
-    File? imgfile = await widget._pathsList[index].file;
-    setState(() {
-      imgFilePath = imgfile!.path;
-    });
-  }
+  // void getPathFromFile(index) async {
+  //   File? imgfile = await widget._pathsList[index].file;
+  //   setState(() {
+  //     imgFilePath = imgfile!.path;
+  //   });
+  // }
 
   Future<void> preloadFilePaths() async {
     List<String> paths = [];
@@ -158,22 +159,10 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge, overlays: []);
     FileStat statOfFile = FileStat.statSync(imgFilePath);
     DateTime? dateMod = statOfFile.modified;
     File aFile = File(imgFilePath);
-    // print(isImage(aFile.path));
-    // bool isImage = false;
-    // String fileExtension = imgFilePath.split('.').last.toLowerCase();
-
-    // if (fileExtension == 'jpg' ||
-    //     fileExtension == 'jpeg' ||
-    //     fileExtension == 'png' ||
-    //     fileExtension == 'gif' ||
-    //     fileExtension == 'bmp') {
-    //   isImage = true;
-    // }
-
-    // PhotoProvider imgprovider = PhotoProvider(mediumId: widget.medium.id);
 
     controllerT.addListener(() {
       if (controllerT.value.getMaxScaleOnAxis() != 1.0 || swipeLock) {
@@ -190,10 +179,10 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
     controllerPage.addListener(() {
       setState(() {
         imgFilePathIndex = controllerPage.page!.round();
-        assset = widget._pathsList[imgFilePathIndex];
+        assetEntity = widget._pathsList[imgFilePathIndex];
         // assetPath = preloadedImgFilePaths[imgFilePathIndex];
         // statOfFile = FileStat.statSync(assetPath);
-        dateMod = assset.modifiedDateTime;
+        dateMod = assetEntity.modifiedDateTime;
       });
     });
 
@@ -211,23 +200,27 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
               itemBuilder: (context, index) {
                 return GestureDetector(
                     onDoubleTapDown: (details) {
-                      _handleDoubleTapDown(details);
+                      if (assetEntity.type != AssetType.video) {
+                        _handleDoubleTapDown(details);
+                      }
                     },
                     onDoubleTap: () {
-                      if (controllerT.value.getMaxScaleOnAxis() <= 1.0) {
-                        _animation = Matrix4Tween(
-                          begin: controllerT.value,
-                          end: Matrix4.identity()
-                            ..translate(-_doubleTapDetails!.localPosition.dx * 2, -_doubleTapDetails!.localPosition.dy * 2)
-                            ..scale(3.0),
-                        ).animate(_animationController);
-                        _animationController.forward(from: 0.0);
-                      } else {
-                        _animation = Matrix4Tween(
-                          begin: controllerT.value,
-                          end: Matrix4.identity(),
-                        ).animate(_animationController);
-                        _animationController.forward(from: 0.0);
+                      if (assetEntity.type != AssetType.video) {
+                        if (controllerT.value.getMaxScaleOnAxis() <= 1.0) {
+                          _animation = Matrix4Tween(
+                            begin: controllerT.value,
+                            end: Matrix4.identity()
+                              ..translate(-_doubleTapDetails!.localPosition.dx * 2, -_doubleTapDetails!.localPosition.dy * 2)
+                              ..scale(3.0),
+                          ).animate(_animationController);
+                          _animationController.forward(from: 0.0);
+                        } else {
+                          _animation = Matrix4Tween(
+                            begin: controllerT.value,
+                            end: Matrix4.identity(),
+                          ).animate(_animationController);
+                          _animationController.forward(from: 0.0);
+                        }
                       }
                     },
                     onTap: () {
@@ -243,12 +236,17 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                         // boundaryMargin: const EdgeInsets.all(1.0),
                         // clipBehavior: Clip.none,
                         panEnabled: true,
-                        scaleEnabled: true,
+                        scaleEnabled: assetEntity.type == AssetType.video ? false : true,
                         minScale: 1.0,
                         maxScale: 5.0,
                         constrained: true,
+                        // constrained: controllerT.value.getMaxScaleOnAxis() > MediaQuery.of(context).size.height / widget._pathsList[index].height
+                        //     ? false
+                        //     : true,
                         transformationController: controllerT,
-                        child: AssetEntityImage(widget._pathsList[index])));
+                        child: assetEntity.type == AssetType.video && imgFilePath.isNotEmpty
+                            ? VideoProvider(filePath: File(preloadedImgFilePaths[imgFilePathIndex]))
+                            : AssetEntityImage(widget._pathsList[index])));
               }),
           uiToggleState
               ? Positioned(
@@ -281,25 +279,8 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                       Navigator.push(
                                           context,
                                           MaterialPageRoute(
-                                            builder: (context) => WallpaperView(asset: assset, fullpath: imgFilePath),
+                                            builder: (context) => WallpaperView(asset: assetEntity, fullpath: imgFilePath),
                                           ));
-
-//                                       String result;
-// // Platform messages may fail, so we use a try/catch PlatformException.
-//                                       try {
-//                                         result = await AsyncWallpaper.setWallpaperFromFile(
-//                                           filePath: imgFilePath,
-//                                           wallpaperLocation: AsyncWallpaper.BOTH_SCREENS,
-//                                           // goToHome: goToHome,
-//                                           toastDetails: ToastDetails.success(),
-//                                           errorToastDetails: ToastDetails.error(),
-//                                         )
-//                                             ? 'Wallpaper set'
-//                                             : 'Failed to get wallpaper.';
-//                                       } on PlatformException {
-//                                         result = 'Failed to get wallpaper.';
-//                                         debugPrint(result);
-//                                       }
                                     },
                                   ),
                                   ListTile(
@@ -335,10 +316,8 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                   imgFilePath = preloadedImgFilePaths[imgFilePathIndex];
                                   try {
                                     Share.shareXFiles([XFile(imgFilePath)], text: basename(aFile.path));
-                                    print(imgFilePath);
                                   } catch (e) {
                                     debugPrint('Error sharing file: $e');
-                                    // Handle the error or show a message to the user
                                   }
                                 },
                                 icon: const Icon(Icons.share),
@@ -364,16 +343,17 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                                                   ListTile(
                                                     dense: true,
                                                     leading: const Icon(Icons.access_time),
-                                                    title: Text('Created: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assset.createDateTime)}'),
-                                                    subtitle: Text('Modified: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assset.modifiedDateTime)}'),
+                                                    title: Text('Created: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assetEntity.createDateTime)}'),
+                                                    subtitle:
+                                                        Text('Modified: ${DateFormat('dd-MMM-yyyy hh:mm a').format(assetEntity.modifiedDateTime)}'),
                                                   ),
                                                   ListTile(
                                                     dense: true,
                                                     leading: const Icon(Icons.image),
                                                     title: Text(
-                                                        '${convertSize(statOfFile.size)} ${extension(assset.title!).replaceFirst(RegExp(r'.'), '')}'),
+                                                        '${convertSize(statOfFile.size)} ${extension(assetEntity.title!).replaceFirst(RegExp(r'.'), '')}'),
                                                     subtitle: Text(
-                                                        '${((assset.width * assset.width) / 1000000).toStringAsFixed(1)}MP (${assset.width} x ${assset.height})'),
+                                                        '${((assetEntity.width * assetEntity.width) / 1000000).toStringAsFixed(1)}MP (${assetEntity.width} x ${assetEntity.height})'),
                                                   ),
                                                 ],
                                               )
@@ -467,16 +447,27 @@ class _ViewerPageState extends State<ViewerPage> with TickerProviderStateMixin {
                       blur: 20,
                       opacity: 50,
                       child: AppBar(
+                        actions: [
+                          swipeLock
+                              ? const Padding(
+                                  padding: EdgeInsets.symmetric(horizontal: 20),
+                                  child: Icon(
+                                    Icons.swipe,
+                                    color: Colors.redAccent,
+                                  ),
+                                )
+                              : const SizedBox()
+                        ],
                         backgroundColor: Colors.transparent,
                         foregroundColor: toolBarIconColor,
                         title: Column(
                           children: [
                             Text(
-                              DateFormat('dd MMM yyyy').format(assset.modifiedDateTime),
+                              DateFormat('dd MMM yyyy').format(assetEntity.modifiedDateTime),
                               style: TextStyle(fontSize: 20, color: toolBarIconColor),
                             ),
                             Text(
-                              DateFormat('hh:mm a').format(assset.modifiedDateTime),
+                              DateFormat('hh:mm a').format(assetEntity.modifiedDateTime),
                               style: TextStyle(fontSize: 15, color: toolBarIconColor),
                             ),
                           ],

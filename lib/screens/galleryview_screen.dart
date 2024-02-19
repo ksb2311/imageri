@@ -37,6 +37,7 @@ class _GalleryViewState extends State<GalleryView> {
       allAssetsInFolder = widget.gotAssets;
       for (var asset in allAssetsInFolder) {
         String date = DateFormat('dd MMM yyyy').format(asset.modifiedDateTime);
+
         if (!groupedAssets.containsKey(date)) {
           groupedAssets[date] = [];
         }
@@ -67,80 +68,13 @@ class _GalleryViewState extends State<GalleryView> {
           elevation: 0,
           title: selectionMode ? Text('${selectedAssets.length} Selected') : Text(widget.pathName),
         ),
-        // body: ListView.builder(
-        //   shrinkWrap: true,
-        //   itemCount: groupedAssets.length,
-        //   itemBuilder: (BuildContext context, int index) {
-        //     List<AssetEntity> flatList = groupedAssets.entries.toList()[index].value;
-        //     late String modifiedDate = groupedAssets.entries.toList()[index].key;
-        //     // for (var entry in groupedAssets[in].entries) {
-        //     //   flatList
-        //     //       // ..add(entry.key)
-        //     //       // ..addAll(entry.value);
-        //     //       .addAll(entry.value);
-        //     //   modifiedDate = entry.key;
-        //     // }
-
-        //     return Column(
-        //       crossAxisAlignment: CrossAxisAlignment.start,
-        //       children: [
-        //         Padding(
-        //           padding: const EdgeInsets.all(8.0),
-        //           child: Text(
-        //             modifiedDate,
-        //             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-        //           ),
-        //         ),
-        //         Padding(
-        //           padding: const EdgeInsets.all(2.0),
-        //           child: GridView.builder(
-        //             shrinkWrap: true,
-        //             itemCount: flatList.length,
-        //             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        //               crossAxisCount: 4,
-        //               crossAxisSpacing: 2,
-        //               mainAxisSpacing: 2,
-        //             ),
-        //             itemBuilder: (context, gindex) {
-        //               dynamic item = flatList[gindex];
-        //               // This is an asset, so return the asset
-        //               return GestureDetector(
-        //                 onTap: () async {
-        //                   // var fullMediaPath =
-        //                   //     await widget._assets[index].file.then((value) => value);
-        //                   if (!mounted) return;
-        //                   Navigator.push(
-        //                       context,
-        //                       MaterialPageRoute(
-        //                         builder: (context) => ViewerPage(flatList, index),
-        //                       ));
-        //                   // ).whenComplete(() => getAssetsList());
-
-        //                   // print(await widget._assets[index].file.then((value) => value));
-        //                 },
-        //                 child: AssetEntityImage(
-        //                   item,
-        //                   isOriginal: false,
-        //                   thumbnailSize: const ThumbnailSize(200, 200),
-        //                   thumbnailFormat: ThumbnailFormat.jpeg,
-        //                   fit: BoxFit.cover,
-        //                 ),
-        //               );
-        //             },
-        //           ),
-        //         ),
-        //       ],
-        //     );
-        //     // : const SizedBox();
-        //   },
-        // ));
         body: Column(children: [
           Expanded(
             child: ListView.separated(
               shrinkWrap: true,
               physics: const ClampingScrollPhysics(),
               itemCount: allAssetsDate.length,
-              separatorBuilder: (BuildContext context, int index) => const Divider(), // Your separator widget here
+              separatorBuilder: (BuildContext context, int index) => const SizedBox(height: 10), // Your separator widget here
               itemBuilder: (BuildContext context, int index) {
                 List<AssetEntity> assetsForCurrentDate = allAssetsInFolder
                     .where((asset) {
@@ -220,13 +154,15 @@ class _GalleryViewState extends State<GalleryView> {
                           child: Padding(
                             padding: const EdgeInsets.all(1.0),
                             child: Stack(fit: StackFit.expand, children: [
-                              AssetEntityImage(
-                                asset,
-                                isOriginal: false,
-                                thumbnailSize: const ThumbnailSize(200, 200),
-                                thumbnailFormat: ThumbnailFormat.jpeg,
-                                fit: BoxFit.cover,
-                              ),
+                              !asset.title.toString().toLowerCase().endsWith('.avif')
+                                  ? AssetEntityImage(
+                                      asset,
+                                      isOriginal: false,
+                                      thumbnailSize: const ThumbnailSize(200, 200),
+                                      thumbnailFormat: ThumbnailFormat.jpeg,
+                                      fit: BoxFit.cover,
+                                    )
+                                  : const SizedBox(),
                               // isSelected
                               //     ? Container(
                               //         decoration: BoxDecoration(border: Border.all(color: SystemTheme.accentColor.accent, width: 5)),
@@ -272,8 +208,10 @@ class _GalleryViewState extends State<GalleryView> {
                       IconButton(
                           onPressed: () async {
                             try {
-                              List<XFile> xFiles = await getFilePaths(selectedAssets);
-                              await Share.shareXFiles(xFiles, text: 'Multiple Files');
+                              if (selectedAssets.isNotEmpty) {
+                                List<XFile> xFiles = await getFilePaths(selectedAssets);
+                                await Share.shareXFiles(xFiles, text: 'Multiple Files');
+                              }
                             } catch (e) {
                               debugPrint('Error sharing file: $e');
                             }
@@ -294,7 +232,7 @@ class _GalleryViewState extends State<GalleryView> {
                               }
                             });
                           },
-                          icon: Icon(selectedAssets.length == allAssetsInFolder.length ? Icons.deselect : Icons.select_all)),
+                          icon: Icon(selectedAssets.length == allAssetsInFolder.length ? Icons.grid_off : Icons.grid_on)),
                       IconButton(
                           onPressed: () {
                             setState(() {
