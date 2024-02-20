@@ -1,6 +1,6 @@
 # imegeri
 
-Imageri lets you browse and manage your photos easily
+Imageri lets you browse and manage your images easily
 
 ## Platform
 
