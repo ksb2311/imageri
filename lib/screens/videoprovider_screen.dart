@@ -50,8 +50,8 @@ class _VideoProviderState extends State<VideoProvider> {
                 child: VideoPlayer(_videoPlayerController),
               ),
               Positioned(
-                top: 0,
-                bottom: 0,
+                // top: 0,
+                bottom: 30,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -66,19 +66,25 @@ class _VideoProviderState extends State<VideoProvider> {
                 ),
               ),
               Positioned(
-                  bottom: 20,
-                  left: 10,
-                  right: 10,
-                  child: Text('${_videoPlayerController.value.duration.inMinutes}:${_videoPlayerController.value.duration.inSeconds}')),
+                  bottom: 75,
+                  left: 50,
+                  // right: 10,
+                  child: Text(
+                    '${_videoPlayerController.value.duration.inMinutes}:${_videoPlayerController.value.duration.inSeconds}',
+                    style: const TextStyle(fontSize: 18, shadows: [Shadow(blurRadius: 10)]),
+                  )),
               Positioned(
-                  bottom: 20,
+                  bottom: 75,
                   // left: 10,
-                  right: 10,
-                  child: Text('${_videoPlayerController.value.position.inMinutes}:${_videoPlayerController.value.position.inSeconds}')),
+                  right: 50,
+                  child: Text(
+                    '${_videoPlayerController.value.position.inMinutes}:${_videoPlayerController.value.position.inSeconds}',
+                    style: const TextStyle(fontSize: 18, shadows: [Shadow(blurRadius: 10)]),
+                  )),
               Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
+                bottom: 10,
+                left: 10,
+                right: 10,
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: VideoProgressIndicator(_videoPlayerController,
