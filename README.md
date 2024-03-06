@@ -19,7 +19,8 @@ Android
 
 ## Build
 
-* Download source from [here](https://github.com/ksb2311/imageri/archive/refs/heads/main.zip) or Clone the project
+* Download source from [here](https://github.com/ksb2311/imageri/archive/refs/heads/main.zip)
+  or Clone the project
 
     ```bash
     git clone https://github.com/ksb2311/imageri.git
